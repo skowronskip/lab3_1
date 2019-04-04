@@ -1,6 +1,7 @@
 package pl.com.bottega.ecommerce.sales.domain.invoicing;
 
 import org.junit.Test;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import pl.com.bottega.ecommerce.canonicalmodel.publishedlanguage.ClientData;
 import pl.com.bottega.ecommerce.canonicalmodel.publishedlanguage.Id;
@@ -29,6 +30,23 @@ public class BookKeeperTest {
         invoiceRequest.add(new RequestItem(productData, 1, new Money(new BigDecimal(100))));
         Invoice invoice = bookKeeper.issuance(invoiceRequest, taxPolicy);
 
-        assertEquals(invoice.getItems().size(), 1);
+        assertEquals(1, invoice.getItems().size());
+    }
+
+    @Test
+    public void shouldExecuteCalculateTaxTwice() {
+        BookKeeper bookKeeper = new BookKeeper(new InvoiceFactory());
+        TaxPolicy taxPolicy = Mockito.mock(TaxPolicy.class);
+        Mockito.when(taxPolicy.calculateTax(any(ProductType.class), any(Money.class)))
+                .thenReturn(new Tax(new Money(new BigDecimal(100)), "Description"));
+        InvoiceRequest invoiceRequest = new InvoiceRequest(new ClientData(new Id("id"), "test client"));
+        ProductData productData = Mockito.mock(ProductData.class);
+        Mockito.when(productData.getType())
+                .thenReturn(ProductType.STANDARD);
+        invoiceRequest.add(new RequestItem(productData, 1, new Money(new BigDecimal(100))));
+        invoiceRequest.add(new RequestItem(productData, 1, new Money(new BigDecimal(100))));
+        Invoice invoice = bookKeeper.issuance(invoiceRequest, taxPolicy);
+
+        Mockito.verify(taxPolicy, Mockito.times(2)).calculateTax(any(ProductType.class), any(Money.class));
     }
 }
