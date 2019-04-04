@@ -67,4 +67,22 @@ public class BookKeeperTest {
         assertEquals(clientData.getName(), invoice.getClient().getName());
         assertEquals(clientData.getAggregateId().getId(), invoice.getClient().getAggregateId().getId());
     }
+
+    @Test
+    public void shouldReturnAllInvoiceWithProperNetAndGrosAmounts() {
+        BookKeeper bookKeeper = new BookKeeper(new InvoiceFactory());
+        TaxPolicy taxPolicy = Mockito.mock(TaxPolicy.class);
+        Mockito.when(taxPolicy.calculateTax(any(ProductType.class), any(Money.class)))
+                .thenReturn(new Tax(new Money(new BigDecimal(100)), "Description"));
+        ClientData clientData = new ClientData(new Id("id"), "Test client");
+        InvoiceRequest invoiceRequest = new InvoiceRequest(clientData);
+        ProductData productData = Mockito.mock(ProductData.class);
+        Mockito.when(productData.getType())
+                .thenReturn(ProductType.STANDARD);
+        invoiceRequest.add(new RequestItem(productData, 1, new Money(new BigDecimal(100))));
+        Invoice invoice = bookKeeper.issuance(invoiceRequest, taxPolicy);
+
+        assertEquals(new Money(new BigDecimal(200)), invoice.getGros());
+        assertEquals(new Money(new BigDecimal(100)), invoice.getNet());
+    }
 }
