@@ -85,4 +85,21 @@ public class BookKeeperTest {
         assertEquals(new Money(new BigDecimal(200)), invoice.getGros());
         assertEquals(new Money(new BigDecimal(100)), invoice.getNet());
     }
+
+    @Test
+    public void shouldExecuteGetTypeTwice() {
+        BookKeeper bookKeeper = new BookKeeper(new InvoiceFactory());
+        TaxPolicy taxPolicy = Mockito.mock(TaxPolicy.class);
+        Mockito.when(taxPolicy.calculateTax(any(ProductType.class), any(Money.class)))
+                .thenReturn(new Tax(new Money(new BigDecimal(100)), "Description"));
+        InvoiceRequest invoiceRequest = new InvoiceRequest(new ClientData(new Id("id"), "test client"));
+        ProductData productData = Mockito.mock(ProductData.class);
+        Mockito.when(productData.getType())
+                .thenReturn(ProductType.STANDARD);
+        invoiceRequest.add(new RequestItem(productData, 1, new Money(new BigDecimal(100))));
+        invoiceRequest.add(new RequestItem(productData, 1, new Money(new BigDecimal(100))));
+        Invoice invoice = bookKeeper.issuance(invoiceRequest, taxPolicy);
+
+        Mockito.verify(productData, Mockito.times(2)).getType();
+    }
 }
