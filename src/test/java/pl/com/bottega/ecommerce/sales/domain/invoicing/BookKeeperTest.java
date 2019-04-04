@@ -49,4 +49,22 @@ public class BookKeeperTest {
 
         Mockito.verify(taxPolicy, Mockito.times(2)).calculateTax(any(ProductType.class), any(Money.class));
     }
+
+    @Test
+    public void shouldReturnOneInvoiceWithProperClientDataWhenInvoiceRequestContainsOneItem() {
+        BookKeeper bookKeeper = new BookKeeper(new InvoiceFactory());
+        TaxPolicy taxPolicy = Mockito.mock(TaxPolicy.class);
+        Mockito.when(taxPolicy.calculateTax(any(ProductType.class), any(Money.class)))
+                .thenReturn(new Tax(new Money(new BigDecimal(100)), "Description"));
+        ClientData clientData = new ClientData(new Id("id"), "Test client");
+        InvoiceRequest invoiceRequest = new InvoiceRequest(clientData);
+        ProductData productData = Mockito.mock(ProductData.class);
+        Mockito.when(productData.getType())
+                .thenReturn(ProductType.STANDARD);
+        invoiceRequest.add(new RequestItem(productData, 1, new Money(new BigDecimal(100))));
+        Invoice invoice = bookKeeper.issuance(invoiceRequest, taxPolicy);
+
+        assertEquals(clientData.getName(), invoice.getClient().getName());
+        assertEquals(clientData.getAggregateId().getId(), invoice.getClient().getAggregateId().getId());
+    }
 }
