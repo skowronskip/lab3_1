@@ -102,4 +102,23 @@ public class BookKeeperTest {
 
         Mockito.verify(productData, Mockito.times(2)).getType();
     }
+
+    @Test
+    public void shouldUseInvoiceFactoryOnce() {
+        InvoiceFactory invoiceFactory = Mockito.mock(InvoiceFactory.class);
+        Mockito.when(invoiceFactory.create(any(ClientData.class))).thenReturn(new Invoice(new Id("ID"), new ClientData(new Id("ID"), "Test client")));
+        BookKeeper bookKeeper = new BookKeeper(invoiceFactory);
+        TaxPolicy taxPolicy = Mockito.mock(TaxPolicy.class);
+        Mockito.when(taxPolicy.calculateTax(any(ProductType.class), any(Money.class)))
+                .thenReturn(new Tax(new Money(new BigDecimal(100)), "Description"));
+        InvoiceRequest invoiceRequest = new InvoiceRequest(new ClientData(new Id("id"), "test client"));
+        ProductData productData = Mockito.mock(ProductData.class);
+        Mockito.when(productData.getType())
+                .thenReturn(ProductType.STANDARD);
+        invoiceRequest.add(new RequestItem(productData, 1, new Money(new BigDecimal(100))));
+        invoiceRequest.add(new RequestItem(productData, 1, new Money(new BigDecimal(100))));
+        Invoice invoice = bookKeeper.issuance(invoiceRequest, taxPolicy);
+
+        Mockito.verify(invoiceFactory, Mockito.times(1)).create(any(ClientData.class));
+    }
 }
